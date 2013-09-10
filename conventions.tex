@@ -1,0 +1,85 @@
+% TODO: add stuff about the complete graph
+\subsection{Conventions}
+
+This section defines the mathematical conventions and definitions used in this document. They are provided to make this document self-contained, please see "Spectral Graph Theory" by Fan R. K. Chung \cite{chung1997spectral} (from which these conventions are borrowed) for a more thorough treatment of spectral graph theory.
+
+\subsubsection{Spectral graph theory}
+In this document, a(n undirected) \emph{graph} $G = (V, E)$ consists of a \emph{vertex set} $V$ and an \emph{edge set} $E \subseteq \{\{u, v\} | u \in V \text{ and } v \in V\}$. We say that vertices $u$ and $v$ are \emph{adjacent}, denoted $u \sim v$, if and only if $\{u,v\}$ is an edge. A \emph{weighted graph} consist of a graph $G = (V, E)$ with an associated \emph{weight function} $w : V \times V \rightarrow \mathbb{R}^+ \cup \{0\}$ where $w$ is symmetric and there is no edge $\{u,v\}$ if and only if $w(u,v) = w(v,u) = 0$ . A graph is called \emph{simple} if it has no loops (e.g. no edge $\{u, v\}$ where $u = v$). A graph is called \emph{finite} if its vertex set is finite. Unless indicated otherwise, we assume graphs to be undirected simple finite weighted graphs. We note that unweighted graphs can be seen as weighted graphs with weight function $w$ defined by:
+
+\[
+w(u,v) = \begin{cases}
+1 & \text{if }u \sim v \\
+0 & \text{otherwise}
+\end{cases}
+\]
+
+Let $G = (V,E)$ be a graph. For notational convenience, and since we assume graphs to be finite, we will interchangeably use the vertex and its index in the $\{1, ..., |V|\}$ set. 
+
+Common graphs used in this document include:
+\begin{itemize}
+\item the \emph{$K$-nearest-neighbor graphs}, which given feature $f  : V \rightarrow \mathbb{R}^q$ for $q \in \mathbb{N} - \{0\}$ connects a pixel to its $K$ nearest neighbors by euclid distance in feature space. Since the $K$-nearest-neighbor membership relation is not symmetric, we distinguish between $2$ cases \cite{von2007tutorial}:
+\begin{itemize}
+\item The graph where there is an edge between $u$ and $v$ if $v$ is one of $u$'s $K$ nearest neighbors \emph{or} if $u$ is one of $v$'s $K$ nearest neighbors, which we simply call \emph{$K$-nearest-neighbor graph}.
+\item The graph where there is an edge between $u$ and $v$ if $v$ is one of $u$'s $K$ nearest neighbors \emph{and} if $u$ is one of $v$'s $K$ nearest neighbors, which we simply call \emph{mutual $K$-nearest-neighbor graph}.
+\end{itemize}
+\end{itemize}
+
+We define the \emph{adjacency matrix} $A \in \mathbb{R}^{n \times n}$ of $G$ where $n = |V|$ by $A_{uv} = w(u,v)$, and the \emph{degree} $d_u$ of vertex $u$ by $d_u = \sum_{u \sim v} w(u,v)$. Let $D = diag(d_1, ..., d_n)$ be the \emph{degree matrix} of $G$.
+
+We define the \emph{combinatorial Laplacian} $L \in \mathbb{R}^{n \times n}$ of $G$ by the following:
+
+\[
+L = D - A \quad \Leftrightarrow \quad L_{uv} = \begin{cases}
+d_u & \text{if }u = v \\
+-w(u,v) & \text{if }u \sim v \\
+0 & \text{otherwise}
+\end{cases}
+\]
+
+the \emph{normalized Laplacian}\footnotemark[1] $\mathcal{L} \in \mathbb{R}^{n \times n}$ by:
+
+\footnotetext[1]{
+Both the combinatorial and normalized Laplacian are commonly refered to as "the Laplacian of $G$" in the literature. To avoid confusion, in this document we will use these names as they were defined in \cite{von2007tutorial}.
+}
+
+\[
+\mathcal{L} = D^{-\frac{1}{2}}LD^{-\frac{1}{2}} = I - D^{-\frac{1}{2}}AD^{-\frac{1}{2}} \quad \Leftrightarrow \quad \mathcal{L}_{uv} = \begin{cases}
+1 & \text{if } u = v \text{ and } d_u \neq 0\\
+-\frac{w(u,v)}{\sqrt{d_ud_v}} & \text{if } u \sim v\\
+0 & \text{otherwise}
+\end{cases}
+\]
+where
+\[
+D^{-\frac{1}{2}}_{u,v} = \begin{cases}
+\frac{1}{\sqrt{d_u}} & \text{if }u = v\text{ and }d_u \neq 0\\
+0 & \text{otherwise}
+\end{cases}
+\]
+
+and the \emph{random walk Laplacian}\footnotemark[2] $L_{rw} \in \mathbb{R}^{n \times n}$ of $G$ by:
+
+\footnotetext[2]{
+The name comes from the fact that this matrix is closely related to the transition probability matrix of a random walk defined on $G$ \cite{von2007tutorial}.
+}
+
+\[
+L_{rw} = D^{-1}L = I - D^{-1}A \quad \Leftrightarrow \quad (L_{rw})_{uv} = \begin{cases}
+1 & \text{if }u = v \text{ and }d_u \neq 0 \\
+-\frac{w(u,v)}{d_u} & \text{if }u \sim v \\
+0 & \text{otherwise}
+\end{cases}
+\]
+
+and $D^{-1}$ is defined similarly to $D^{-\frac{1}{2}}$.
+
+\subsubsection{Image processing}
+In this document, an \emph{image} $I$ is a function $I : \{1, ..., h\} \times \{1, ..., w\} \rightarrow \{0, ..., 2^d - 1\}^c$ where $h$ is the \emph{height} of the image, $w$ its \emph{width}, $d$ its \emph{depth} and $c$ its \emph{number of channels}. When $c = 3$, $I$ is called a \emph{color image}.
+
+Let $I$ be an image, and $G = (V,E)$ be a graph where $V = dom(I)$ is the set of pixel coordinates of $I$. A \emph{segmentation} $S = \{S_1, ..., S_m\}$ is a partition of $V$ where each $S_i$ is a connected component in $G$. Common graphs considered for segmentation are:
+
+\begin{itemize}
+\item the \emph{$4$-connected graph}, which connects pixels directly under, over, left and right of each pixel.
+\item the \emph{$8$-connected graph}, which is the $4$-connected graph with additional diagonal edges.
+\item the $K$-nearest-neighbors graphs for some pixel features - usually a mix of color and coordinates information.
+\end{itemize}
