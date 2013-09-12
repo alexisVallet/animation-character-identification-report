@@ -1,7 +1,6 @@
-% TODO: add stuff about the complete graph
 \subsection{Conventions}
 
-This section defines the mathematical conventions and definitions used in this document. They are provided to make this document self-contained, please see "Spectral Graph Theory" by Fan R. K. Chung \cite{chung1997spectral} (from which these conventions are borrowed) for a more thorough treatment of spectral graph theory.
+This section establishes the mathematical conventions and definitions used in this document. They are provided to make this document self-contained, please see "Spectral Graph Theory" by Fan R. K. Chung \cite{chung1997spectral} (from which these conventions are borrowed) for a more thorough treatment of spectral graph theory.
 
 \subsubsection{Spectral graph theory}
 In this document, a(n undirected) \emph{graph} $G = (V, E)$ consists of a \emph{vertex set} $V$ and an \emph{edge set} $E \subseteq \{\{u, v\} | u \in V \text{ and } v \in V\}$. We say that vertices $u$ and $v$ are \emph{adjacent}, denoted $u \sim v$, if and only if $\{u,v\}$ is an edge. A \emph{weighted graph} consist of a graph $G = (V, E)$ with an associated \emph{weight function} $w : V \times V \rightarrow \mathbb{R}^+ \cup \{0\}$ where $w$ is symmetric and there is no edge $\{u,v\}$ if and only if $w(u,v) = w(v,u) = 0$ . A graph is called \emph{simple} if it has no loops (e.g. no edge $\{u, v\}$ where $u = v$). A graph is called \emph{finite} if its vertex set is finite. Unless indicated otherwise, we assume graphs to be undirected simple finite weighted graphs. We note that unweighted graphs can be seen as weighted graphs with weight function $w$ defined by:
@@ -13,18 +12,17 @@ w(u,v) = \begin{cases}
 \end{cases}
 \]
 
-Let $G = (V,E)$ be a graph. For notational convenience, and since we assume graphs to be finite, we will interchangeably use the vertex and its index in the $\{1, ..., |V|\}$ set. 
-
 Common graphs used in this document include:
 \begin{itemize}
 \item the \emph{$K$-nearest-neighbor graphs}, which given feature $f  : V \rightarrow \mathbb{R}^q$ for $q \in \mathbb{N} - \{0\}$ connects a pixel to its $K$ nearest neighbors by euclid distance in feature space. Since the $K$-nearest-neighbor membership relation is not symmetric, we distinguish between $2$ cases \cite{von2007tutorial}:
 \begin{itemize}
-\item The graph where there is an edge between $u$ and $v$ if $v$ is one of $u$'s $K$ nearest neighbors \emph{or} if $u$ is one of $v$'s $K$ nearest neighbors, which we simply call \emph{$K$-nearest-neighbor graph}.
-\item The graph where there is an edge between $u$ and $v$ if $v$ is one of $u$'s $K$ nearest neighbors \emph{and} if $u$ is one of $v$'s $K$ nearest neighbors, which we simply call \emph{mutual $K$-nearest-neighbor graph}.
+\item The graph where there is an edge between $u$ and $v$ if  and only if $v$ is one of $u$'s $K$ nearest neighbors \emph{or} $u$ is one of $v$'s $K$ nearest neighbors, which we simply call \emph{$K$-nearest-neighbor graph}.
+\item The graph where there is an edge between $u$ and $v$ if and only if $v$ is one of $u$'s $K$ nearest neighbors \emph{and} $u$ is one of $v$'s $K$ nearest neighbors, which we simply call \emph{mutual $K$-nearest-neighbor graph}.
 \end{itemize}
+\item the \emph{complete graph} in which all pairs of distinct vertices have an edge between them.
 \end{itemize}
 
-We define the \emph{adjacency matrix} $A \in \mathbb{R}^{n \times n}$ of $G$ where $n = |V|$ by $A_{uv} = w(u,v)$, and the \emph{degree} $d_u$ of vertex $u$ by $d_u = \sum_{u \sim v} w(u,v)$. Let $D = diag(d_1, ..., d_n)$ be the \emph{degree matrix} of $G$.
+Let $G = (V,E)$ be a graph. For notational convenience, and since we assume graphs to be finite, we will interchangeably use the vertex and its index in the $\{1, ..., |V|\}$ set. We define the \emph{adjacency matrix} $A \in \mathbb{R}^{n \times n}$ of $G$ where $n = |V|$ by $A_{uv} = w(u,v)$, and the \emph{degree} $d_u$ of vertex $u$ by $d_u = \sum_{u \sim v} w(u,v)$. Let $D = diag(d_1, ..., d_n)$ be the \emph{degree matrix} of $G$.
 
 We define the \emph{combinatorial Laplacian} $L \in \mathbb{R}^{n \times n}$ of $G$ by the following:
 
