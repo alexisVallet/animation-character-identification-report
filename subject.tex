@@ -12,8 +12,26 @@ The subject of my work here was to design a computer algorithm able to automatic
 \section{Position in the laboratory}
 I worked in the Sakamoto laboratory as a research student.
 \section{Previous studies}
-Previous work in the laboratory by graduate student Yuki Nakagawa on the animation character identification problem identified a segmentation method\cite{felzenszwalb2004efficient} and a classification method\cite{harchaoui2007image} for the problem. A dataset of animation character images was also previously constituted.
+Previous work in the laboratory by graduate student Yuki Nakagawa on the animation character identification problem identified a segmentation method\cite{felzenszwalb2004efficient} and a classification method\cite{harchaoui2007image} for the problem. A dataset of animation character images was also previously constituted in the laboratory.
+
+
 \section{Objectives}
+
+\begin{figure}[htb!]
+\centering
+\begin{subfigure}{.3\textwidth}
+\includegraphics[width=\textwidth]{images/miku_e.png}
+\end{subfigure}
+\begin{subfigure}{.3\textwidth}
+\includegraphics[width=\textwidth]{images/miku_c.png}
+\end{subfigure}
+\begin{subfigure}{.3\textwidth}
+\includegraphics[width=\textwidth]{images/miku_d.png}
+\end{subfigure}
+\caption{Images for one character illustrating differences in posture, exaggerations, occlusion and artist differences.}
+\label{fig:animationImagesVariations}
+\end{figure}
+
 The first objective was to design a method which would improve on the state of the art in animation character identification, in terms of recognition rate, clustering quality or run time performance. The envisioned application domain being automatic image annotation for web artist communities such as Pixiv\footnotemark[1]
 \footnotetext[1]{
 \url{www.pixiv.net} is a popular Japanese web artist community.
@@ -23,4 +41,7 @@ The first objective was to design a method which would improve on the state of t
 \url{www.deviantart.com} is a popular English speaking web artist community.
 }
 it should also be able to handle large datasets.
+
+A secondary objective was to improve on the state of the art in the fields of computer vision and machine learning through the challenges specific to animation characters. There is for instance a large literature on human face recognition \cite{turk1991eigenfaces} \cite{belhumeur1997eigenfaces}, but such methods fail to account for meaningful color information in animation images as well as variations introduced by character posture, exaggerations, occlusion of body parts and differences between artists (\autoref{fig:animationImagesVariations}). Many classification and clustering methods also require data to form convex clusters (for instance $k$-means clustering), which is rarely the case with animation images because of previously mentioned variations, so recent research involving non-linear embeddings of data were of particular interest \cite{roweis2000nonlinear} \cite{belkin2003laplacian} .
+
 \section{Planning}
