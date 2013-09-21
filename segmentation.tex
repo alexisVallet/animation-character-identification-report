@@ -31,6 +31,8 @@ the largest weight of the minimum spanning tree of $C$:
 Int(C) = \max_{\{u,v\} \in MST(C, E)} w(u,v)
 \]
 
+Note that in our case, we consider a slightly different threshold function to allow segments of varying size provided they are homogeneous enough by using graph-theoretic volume instead of cardinality: $\tau(C) = \frac{k}{vol(C)}$ where $vol(C) = \sum_{v \in C} d_v$.
+
 \begin{algorithm}
 \caption{Felzenszwalb's segmentation algorithm}
 \label{alg:felzenszwalb}
@@ -68,6 +70,23 @@ While a non-mutual $K$-nearest neighbor graph is not necessarily sparse, the aut
 \subsubsection{Hue-based segment merging}
 \label{sec:hueMerging}
 
+\begin{figure}[htb!]
+\centering
+\begin{subfigure}{0.3\textwidth}
+\includegraphics[width=\textwidth]{images/miku_a.png}
+\caption{Original image.}
+\end{subfigure}
+\begin{subfigure}{0.3\textwidth}
+\includegraphics[width=\textwidth]{images/miku_seg_initial.png}
+\caption{Result of Felzenszwalb's method.}
+\end{subfigure}
+\begin{subfigure}{0.3\textwidth}
+\includegraphics[width=\textwidth]{images/miku_seg_fused.png}
+\caption{After merging.}
+\end{subfigure}
+\caption{Example of merging by hue. In the initial segmentation, the hair is separated in 3 large segments, which are fused into one after merging - even though the arms separate these 3 segments.}
+\end{figure}
+
 Felzenszwalb's method, using a small enough scale parameter, tends to produce over segmentations of the image (relevant areas in the image are divided in multiple segments), with segments of similar area. Furthermore, using a $4$-connected graph, it cannot produce spatially disconnected segments, although such cases arise due to changes in posture or occlusion by other objects. To solve this issue, we introduced a post-processing step merging segments whose average hue are "close enough" in some sense, to produce a suitable segmentation with varying segment sizes and disconnected segments.
 
 \paragraph{The method} We consider a segmentation $S$ for a color image $I$, our algorithm outputs a new segmentation for $I$. It proceeds by considering the complete graph on the set of segments of the image, with edges weighted by absolute hue difference. We then consider a small fraction of these edges in ascending order of weight, and fuse the corresponding segments. The pseudo code of the algorithm is given in algorithm \autoref{alg:hueMerging}.
@@ -94,6 +113,6 @@ Felzenszwalb's method, using a small enough scale parameter, tends to produce ov
 
 \paragraph{Theoretical justification} This is mostly a heuristic method which relies on greedy assumptions for efficiency. For instance we assume that the difference in average hue between the merged segment is small enough that the average hue of the new segment does not need recomputing. As we merge them from smallest hue difference to largest, this assumption holds to some extent. Although computing the new hue can be done efficiently by associativity of the barycenter, it would require resorting the data structure for $E$ to account for the changes - which propagate inside the graph in a non-trivial way.
 
-\paragraph{Implementation} Computing the average hue for each segment can be done in $O(n\alpha(n))$ steps using a disjoint set forest data structure for $S$ where $\alpha$ is the inverse of the Ackermann function and $n$ is the number of pixels in the image - assuming the hue of each pixels was precomputed as part of a preprocessing step. Using a binary heap data structure for $E$ makes computing the edges weight run in $O(q^2)$ time, and the second loop then runs in $O(\lfloor \frac{q}{k} \rfloor \log(q))$. As there is, to the author's knowledge, no direct relationship between $q$ and $n$ (besides $q \leq n$) allowing us to decide which of the first $2$ steps dominates the author, we will leave the overall time complexity as $O(n\alpha(n) + q^2)$.
+\paragraph{Implementation} Computing the average hue for each segment can be done in $O(n\alpha(n))$ steps using a disjoint set forest data structure for $S$ where $\alpha$ is the inverse of the Ackermann function and $n$ is the number of pixels in the image - assuming the hue of each pixels was precomputed as part of a preprocessing step. Using a binary heap data structure for $E$ makes computing the edges weight run in $O(q^2)$ time, and the second loop then runs in $O(\lfloor \frac{q}{k} \rfloor \log(q))$. As there is, to the author's knowledge, no direct relationship between $q$ and $n$ (besides $q \leq n$) allowing us to decide which of the first $2$ steps dominates the other, we will leave the overall time complexity as $O(n\alpha(n) + q^2)$.
 
-\paragraph{Results and analysis} As a post-processing step to Felzenszwalb's method, this algorithm gives segmentation which solves the issues mentioned earlier - segments of varying size, connecting areas which are spatially disconnected. This yields segmentation which correspond better to human perception, and are overall more consistent across images of the same character, which is essential to classification.
+\paragraph{Results and analysis} As a post-processing step to Felzenszwalb's method, this algorithm solves the issues mentioned earlier - segments of varying size, connecting areas which are spatially disconnected. This yields segmentation which correspond better to human perception, and are overall more consistent across images of the same character, which is essential to classification.
