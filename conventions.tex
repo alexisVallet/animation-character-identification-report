@@ -25,6 +25,7 @@ Common graphs used in this document include:
 
 Let $G = (V,E)$ be a graph. For notational convenience, and since we assume graphs to be finite, we will interchangeably use the vertex and its index in the $\{1, ..., |V|\}$ set. We define the \emph{adjacency matrix} $A \in \mathbb{R}^{n \times n}$ of $G$ where $n = |V|$ by $A_{uv} = w(u,v)$, and the \emph{degree} $d_u$ of vertex $u$ by $d_u = \sum_{u \sim v} w(u,v)$. Let $D = diag(d_1, ..., d_n)$ be the \emph{degree matrix} of $G$.
 
+\label{sec:laplacians}
 We define the \emph{combinatorial Laplacian} $L \in \mathbb{R}^{n \times n}$ of $G$ by the following:
 
 \[

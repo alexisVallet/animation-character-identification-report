@@ -1,9 +1,23 @@
 \subsection{Classification}
-\subsubsection{Tree-walk kernels}
-Our initial idea for classifying the animation characters is to consider the region adjacency graph on the segments of the image. The intuition behind is that although changes in posture, scale change the overall image significantly, the arrangement of segments in the image relative to each other should roughly stay the same. 
+\subsubsection{Tree-walk kernel}
+Our initial idea for classifying the animation characters is to consider the region adjacency graph on the segments of the image. The intuition is that although changes in posture, scale change the overall image significantly, the arrangement of segments in the image relative to each other should roughly stay the same. Classifying images by their region adjacency graph has been studied by Z. Harchaoui and F. Bach in \cite{harchaoui2007image}, in which they a introduce a number of kernels to compute similarity between such graphs. We chose to study and implement the tree-walk kernel presented in this paper.
 
-Given some animation image $I$, some segmentation $S = \{S_1, ..., S_q\}$ of $I$ and a $4$-connected or $8$-connected notion of adjacency between pixels. The region adjacency graph $G$ of $I$ is defined as the graph where vertices are segments and there is an edge between segments $S_i$ and $S_j$ if and only if there is a pair of pixels $(p_i, p_j) \in S_i \times S_j$ such that $p_i$ and $p_j$ are adjacent.
+\paragraph{The method} Let $I$ be a color image, $S = \{S_1, ..., S_q\}$ a segmentation of $I$ and a $4$-connected notion of adjacency between pixels. The region adjacency graph $G$ of $I$ is defined as the graph where vertices are segments and there is an edge between segments $S_i$ and $S_j$ if and only if there is a pair of adjacent pixels $(p_i, p_j) \in S_i \times S_j$. As the $4$-connected graphs are always planar, and the region adjacency graph is a minor of the $4$-connected graph, the region adjacency graph is planar by Wagner's theorem. It should be noted however that the $8$-connected graphs are not planar beyond a grid of size 5 by 5 vertices by Euler's formula on planar graphs, and so using an $8$-connected notion of adjacency could be inappropriate for this method.
+
+Let $G$ and $H$ be region adjacency graphs with labeling functions $l_g : V(G) \rightarrow L$ and $l_h : V(H) \rightarrow L$, where $L$ is a segment label set. The method considers a kernel function $k : L \times L \rightarrow \mathbb{R}^+ \cup \{0\}$ which measures similarity between segment labels. The authors first define the $p$-th order walk kernel $k_{\mathcal{W}}^p(G,H)$ between $G$ and $H$ as:
+
+\[
+k_{\mathcal{W}}^p(G,H) = \sum_{\substack{(r_1, ...., r_p) \in \mathcal{W}_G^p\\ (s_1, ...., s_p) \in \mathcal{W}_G^p}} \prod_{i=1}^p k(l_G(r_i), l_H(s_i))
+\]
+
+where $\mathcal{W}_G^p$ (resp $\mathcal{W}_H^p$) denotes the set of walks of length at most $p$ in $G$ (resp $H$).
 
 \subsubsection{Segmentation graph spectral classification methods}
+The tree walk kernels method performed poorly in part because it relies overly on the region adjacency graph of the image, whose structure changes significantly with image variations. In an effort to match graph structure more loosely, we considered the results from spectral graph theory which attempt to analyze graphs through the eigenvalues and eigenvectors of its Laplacian. Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode in a sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images.
+
+\paragraph{The method} For each segmentation $S$, we consider $m$ features $(f_i : S \Rightarrow \mathbb{R}_i^q)_{1 \leq i \leq m}$. For instance, we used average $L*a*b*$ color, gravity center and area of the segment as features. For each feature $f_i$, we compute the $K$-nearest neighbor graph $G_i$ on $S$ with edges weighted by the Gaussian kernel $w(S_u,S_v) = e^{-\frac{||f_i(S_u) - f_i(S_v)||^2}{\sigma_i^2}}$, and its corresponding combinatorial Laplacian  $L_i$ (see \autoref{sec:laplacians} for definitions).
+
+
+
 
 \subsubsection{Segment matching method}

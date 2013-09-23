@@ -43,7 +43,7 @@ Generalizing to color images, we still consider the arithmetic means of pixel co
 
 As the goal is to obtain a segmentation as close to human perception as possible, the $L^*a^*b^*$ color space has been found to be most suitable. The $HSV$ or $HSL$ color spaces are also useful to extract hue information, (the $H$ in either color space) which we use for histogram equalization (\autoref{sec:histEq}) and as post-processing to segmentation (\autoref{sec:hueMerging}).
 
-Although using $L^*a^*b^*$ color space gives good segmentations, it may not be ideal for classification as $2$ different characters may share predominantly the same color palette. A possible extension of this would be to use training data to determine an abstract (possibly high-dimensional) color space where members of the same class are close and members of different classes are far away, using - for instance - a (semi) supervised embedding method similar to the one used in \cite{urahama2007semi}.
+Although using $L^*a^*b^*$ color space gives good segmentations, it may not be ideal for classification as $2$ different characters may share predominantly the same color palette. A possible extension of this would be to use training data to determine an abstract and possibly non-linear color space where members of the same class are close and members of different classes are far away, using - for instance - a (semi) supervised embedding method similar to the one used in \cite{urahama2007semi}.
 
 \subsubsection{Color histogram equalization by hue}
 \label{sec:histEq}
