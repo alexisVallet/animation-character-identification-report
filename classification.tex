@@ -92,14 +92,58 @@ However, it should be noted that the segment matching solution (see \autoref{sec
 Furthermore, study of the multiple kernel learning method described in the original paper and other works by Bach \cite{bach2004multiple} may give a solution to the problem of choosing the right parameters for the algorithm.
 
 \subsubsection{Segmentation graph spectral classification methods}
-The tree walk kernels method performed poorly in part because it relies overly on the smaller variations of the region adjacency graph of the image. In an effort to match graph structure more loosely, we considered the results from spectral graph theory which attempt to analyse graphs through the eigenvalues and eigenvectors of its Laplacian. Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode to some extent sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images.
+The tree walk kernels method performed poorly in part because it relies overly on the smaller variations of the region adjacency graph of the image. In an effort to match graph structure more loosely, we considered the results from spectral graph theory which attempt to analyse graphs through the eigenvalues and eigenvectors of its Laplacian. 
 
-\paragraph{The method} For each segmentation $S$, we consider $m$ features $(f_i : S \rightarrow \mathbb{R}_i^q)_{1 \leq i \leq m}$. For instance, we used average $L^*a^*b*$ color, gravity center and area of the segment as features. For each feature $f_i$, we compute the $K$-nearest neighbor graph $G_i$ on $S$ with edges weighted by the Gaussian kernel $w(S_u,S_v) = e^{-\frac{||f_i(S_u) - f_i(S_v)||^2}{\sigma_i^2}}$, and its corresponding combinatorial Laplacian  $L_i \in \mathbb{R}^{n \times n}$ where $n$ is the number of segments (see \autoref{sec:laplacians} for definitions). 
-
+\paragraph{The method} For each segmentation $S$, we consider $m$ features $(f_i : S \rightarrow \mathbb{R}_i^q)_{1 \leq i \leq m}$. For instance, we used average $L^*a^*b^*$ color, gravity center and area of the segment as features. For each feature $f_i$, we compute the $K$-nearest neighbor graph $G_i$ on $S$ with edges weighted by the Gaussian kernel $w(S_u,S_v) = e^{-\frac{||f_i(S_u) - f_i(S_v)||^2}{\sigma_i^2}}$, and its corresponding combinatorial Laplacian  $L_i \in \mathbb{R}^{n \times n}$ where $n$ is the number of segments (see \autoref{sec:laplacians} for definitions).
 
 We then use the method from Wilson, Hancock and Luo \cite{wilson2005pattern} to determine a pattern vector for the graph. To do so, we consider the $k$ eigenvectors $(e_1, ..., e_k)$ corresponding to the $k$ smallest non-zero eigenvalues $(\lambda_1, ..., \lambda_k)$ of $L_i$. 
 
+This method considers the \emph{spectral matrix} $\Phi \in \mathbb{R}^{n \times k}$ which contains the eigenvectors as columns, scaled by the square roots of the eigenvalues.
 
+\[
+\Phi = (\sqrt{\lambda_1}e_1 ... \sqrt{\lambda_k}e_k)
+\]
+
+Note that the original paper considers all the eigenvectors of the Laplacian. We chose to only use the $k$ first for efficiency and looser graph comparison.
+$\Phi$ is well defined as $L_i$ is positive semi definite. Furthermore, $0$ is an eigenvalue of the combinatorial Laplacian for any graph with multiplicity the number of connected components, so this makes clear why we chose to ignore the $0$ eigenvalues - they will only result in a $0$ column for any graph. See \cite{chung1997spectral} for proofs of the elementary properties of the combinatorial Laplacian (and the closely related normalized Laplacian).
+
+
+The spectral matrix, although it encodes all the information of the $k$ eigenvectors and eigenvalues, cannot directly be used as vector for pattern matching because it is not invariant to vertex permutations on the graph - although the eigenvalues are invariant to such permutations, individual components of the eigenvectors are not. Therefore the authors introduce the \emph{elementary symmetric polynomials} $P = (P_1, ..., P_n)$ to compute $n$ permutation invariant features out of each scaled eigenvectors:
+
+\begin{align*}
+P_1(x_1, ..., x_n) &= \sum_{i = 1}^n x_i\\
+P_2(x_1, ..., x_n) &= \sum_{i = 1}^n \sum_{j = i + 1}^n x_ix_j\\
+... & \\
+P_r(x_1, ..., x_n) &= \sum_{0 < i_1 < ... < i_r < n} \prod_{j = 1}^r x_{i_r}\\
+... & \\
+P_n(x_1, ..., x_n) &= \prod_{i = 1}^n x_i
+\end{align*}
+
+So, for each column $\Phi_i = \sqrt{\lambda_i}e_i$ of $\Phi$, we apply each symmetric polynomial to its components to obtain a new vector $E_i \in \mathbb{R}^n$ defined as:
+
+\[
+E_i = \begin{pmatrix}
+signum(P_1(\Phi_i)) ln(1 + |P_1(\Phi_i)|) \\
+... \\
+signum(P_n(\Phi_i)) ln(1 + |P_n(\Phi_i)|)
+\end{pmatrix}
+\] 
+
+The logarithmic scaling is added to adjust the distribution of terms in the polynomials, as suggested in the original paper. Concatenating these vectors for each of the $k$ columns of the spectral matrix, we get a single feature vector $B \in \mathbb{R}^{nk}$. Applying this method to each graph $G_i$ then gives us $m$ feature vectors $(B_i)_{1 \leq i \leq m}$ which we concatenate into the final feature vector $F \in \mathbb{R}^{nmk}$ for the image. We then classify the images by these feature vectors using support vector machines.
+
+We deal with graphs of different size - when the images have different number of segments, which is almost always the case with Felzenszwalb's method - by padding the Laplacian matrix with zeros to match the largest graph in the dataset, as suggested in the original paper.
+
+\paragraph{Theoretical justification}
+Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode to some extent sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images, and encode the information about the global structure of the graph.
+
+\paragraph{Implementation}
+Computing our $3$ features of interest - average color, gravity center and area of the segments - can be done in one pass over the image and runs in $O(q)$ time where $q$ is the number of pixels in the image. Computing the $K$-nearest neighbor graph for each feature can then be done using an algorithm solving the all nearest neighbor problem, which can be done in $O(Kn\log(n))$ where $n$ is the number of segments in the image \cite{clarkson1983fast}. The resulting graphs are sparse, as the number of edges is at most $K$ times the number of vertices.
+
+For each graph, we can then compute its Laplacian using a sparse matrix data structure in $O(n)$ time by sparsity of the graph and using an adjacency list data structure. We can compute the multiplicity $l$ of the eigenvalue $0$ by running a connected components detection algorithm on the graph, which runs in $O(n)$ time using a simple depth first search procedure. We can then efficiently compute the $k$ eigenvectors of the Laplacian matrix corresponding to the smallest non zero eigenvalues by computing the $k + l$ smallest eigenvectors using the Lanczos method for sparse symmetric matrices, which can be tuned to run in $O((k + l)n^2)$ time \footnote{
+There is little literature on the run time complexity of the Lanczos algorithm. However, being an iterative method, we found in practice that limiting the number of iterations to $n$ yields good enough results. Each iteration being dominated by a sparse matrix by dense vector product which runs in $O(n)$ time, and repeating the process for each of the $k + l$ eigenvectors, it is easy to deduce this run time complexity. However, the specifics of the implementation used - here from the Fortran library Arpack - may introduce more run time for the sake of numerical stability, and optimizations to compute multiple eigenvectors at once are not accounted for, so this may not be a very informative result.
+}.
+
+Evaluating all the symmetric polynomials for a single column of $\Phi$ can be implemented in $O(n)$ time using the \emph{power symmetric functions} and the Newton-Girard formula
 
 \subsubsection{Segment matching method}
 \label{sec:segmentMatching}
