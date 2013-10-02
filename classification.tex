@@ -134,7 +134,7 @@ The logarithmic scaling is added to adjust the distribution of terms in the poly
 We deal with graphs of different size - when the images have different number of segments, which is almost always the case with Felzenszwalb's method - by padding the Laplacian matrix with zeros to match the largest graph in the dataset, as suggested in the original paper.
 
 \paragraph{Theoretical justification}
-Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode to some extent sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images, and encode the information about the global structure of the graph.
+Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode to some extent sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images, and encode the information about the global structure of the image.
 
 \paragraph{Implementation}
 Computing our $3$ features of interest - average color, gravity center and area of the segments - can be done in one pass over the image and runs in $O(q)$ time where $q$ is the number of pixels in the image. Computing the $K$-nearest neighbor graph for each feature can then be done using an algorithm solving the all nearest neighbor problem, which can be done in $O(Kn\log(n))$ where $n$ is the number of segments in the image \cite{clarkson1983fast}. The resulting graphs are sparse, as the number of edges is at most $K$ times the number of vertices.
@@ -143,7 +143,110 @@ For each graph, we can then compute its Laplacian using a sparse matrix data str
 There is little literature on the run time complexity of the Lanczos algorithm. However, being an iterative method, we found in practice that limiting the number of iterations to $n$ yields good enough results. Each iteration being dominated by a sparse matrix by dense vector product which runs in $O(n)$ time, and repeating the process for each of the $k + l$ eigenvectors, it is easy to deduce this run time complexity. However, the specifics of the implementation used - here from the Fortran library Arpack - may introduce more run time for the sake of numerical stability, and optimizations to compute multiple eigenvectors at once are not accounted for, so this may not be a very informative result.
 }.
 
-Evaluating all the symmetric polynomials for a single column of $\Phi$ can be implemented in $O(n)$ time using the \emph{power symmetric functions} and the Newton-Girard formula
+Evaluating all the symmetric polynomials for a single column of $\Phi$ can be implemented in $O(n^2)$ time using the \emph{power symmetric functions} $Q = (Q_1, ..., Q_n)$:
+
+\[
+\forall r \in \{1, ..., n\} \quad Q_r(x_1, ..., x_n) = \sum_{i = 1}^n x_i^r
+\]
+
+And the Newton-Girard formula:
+
+\[
+P_r = \frac{(-1)^{r+1}}{r} \sum_{i = 1}^r (-1)^{i + r}Q_iP_{r - i}
+\]
+
+
+Where $Q_0$ denotes the constant $1$ polynomial. One can first compute all the power symmetric functions in $O(n^2)$ time by accumulating the exponentiation of the terms of the sum from one polynomial to the next. We can then compute all the elementary symmetric polynomials by accumulating the inner sum of the Newton-Girard formula in $O(n^2)$ for a total $O(n^2)$ running time. So evaluating the feature vector for all columns of $\Phi$ takes $O(kn^2)$ run time.
+
+So the procedure to compute the pattern vector for a single image runs in $O(q + (k + l)n^2)$ time.
+
+\paragraph{Results and analysis}
+Recognition rates measured using leave one out cross validation on a dataset of $12$ characters results in a $10\%$ recognition rate, which is barely better than random. Other methods based on the eigenvalues and eigenvectors of various Laplacians of graphs on the set of segments were considered, with similar results.
+
+The main issue of this method is that the Laplacian only encodes information about edges in the graph, therefore only contains information about segments relative to other segments in the image. The information about the segments themselves, and more importantly between segments of different images, is largely lost. For animation images, segment labelling information turns out to be more important than the structure of segments in the image.
+
+Further, the theory behind the algorithm is not completely sound. The paper by Wilson, Hancock and Luo does indicate that the vectors obtained are not necessarily very useful for pattern matching, and should go through some form of dimensionality reduction to be embedded in a pattern space \cite{wilson2005pattern}. Indeed, this may solve the problem of graphs of different size to some extent, as padding the Laplacian with zeros effectively adds zeros to the final pattern vector.
 
 \subsubsection{Segment matching method}
 \label{sec:segmentMatching}
+\begin{figure}[htb!]
+\centering
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/rufy_d.png}
+\end{subfigure}
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/rufy_original2.png}
+\end{subfigure}
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/luffy_match1.png}x
+\end{subfigure}
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/luffy_match2.png}
+\end{subfigure}
+\caption{Original images (left) and corresponding relation (right). Segments with the same color are matched together.}
+\end{figure}
+
+One of the big issues with the previous methods comes from the graphs on the set of segments of a single image not encoding enough information from the image for classification. In an effort to extract more information from the image and to compare the segment information between images directly, we tried to consider how one could match segments between $2$ segmentations, so matched segments could correspond to the same part of the character. This resulted in the following method.
+
+\paragraph{The method} We once again consider some features on the set of segments of the image, namely average $L^*a^*b^*$ color, gravity center and area of the segment. We compute similarity between the segments of $2$ images using a fuzzy control system taking the similarity in features as inputs, and returning an overall similarity of the $2$ segments.
+
+\begin{figure}[htb!]
+\centering
+\begin{subfigure}{\textwidth}
+\centering
+\tikzstyle{block} = [draw, fill=blue!20, rectangle, 
+    minimum height=6em, minimum width=6em]
+\tikzstyle{pinstyle} = [pin edge={to-,thin,black}]
+\begin{tikzpicture}[auto, node distance=2cm]
+\node (colInput) {$c_{ij} = e^{-\frac{||c_i - c_j||}{\sigma_c^2}}$};
+\node [below of=colInput] (posInput) {$x_{ij} = e^{-\frac{||x_i - x_j||}{\sigma_x^2}}$};
+\node [below of=posInput] (areaInput) {$a_{ij} = e^{-\frac{|a_i - a_j|}{\sigma_a^2}}$};
+\node [block, right of=posInput, node distance=3cm] (fcs) {FCS};
+\node [right of=fcs, node distance=3cm] (output) {$s_{ij}$};
+\draw [->] (colInput) -- (fcs);
+\draw [->] (posInput) -- (fcs);
+\draw [->] (areaInput) -- (fcs);
+\draw [->] (fcs) -- (output);
+\end{tikzpicture}
+\caption{Inputs and output.}
+\end{subfigure}
+
+\begin{subfigure}{\textwidth}
+\centering
+\begin{tikzpicture} 
+\begin{axis}[xlabel=input similarity,ylabel=membership,
+legend style={
+at={(0,0)},
+anchor=north east}]
+\addplot coordinates {(0,1) (0.5, 0) (1, 0)};
+\addlegendentry{Low}
+\addplot coordinates {(0,0) (0.5, 1) (1, 0)};
+\addlegendentry{Medium}
+\addplot coordinates {(0,0) (0.5,0) (1, 1)};
+\addlegendentry{High}
+\end{axis}
+\end{tikzpicture}
+\caption{Membership functions for inputs.}
+\end{subfigure}
+
+\begin{subfigure}{\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[xlabel=input similarity,ylabel=membership,
+legend style={
+at={(0,0)},
+anchor=north east}]
+\addplot coordinates {(0,1) (0.33, 0) (1, 0)};
+\addlegendentry{Low}
+\addplot coordinates {(0,0) (0.33, 1) (0.66, 0) (1, 0)};
+\addlegendentry{Medium}
+\addplot coordinates {(0,0) (0.33,0) (0.66, 1) (1, 0)};
+\addlegendentry{High}
+\addplot coordinates {(0,0) (0.66, 0) (1, 1)};
+\addlegendentry{Veryhigh}
+\end{axis}
+\end{tikzpicture}
+\caption{Membership functions for output.}
+\end{subfigure}
+\caption{Fuzzy control system (FCS) for segment similarity. For a segment $i$, $c_i$ denotes its average color, $x_i$ the coordinates of its gravity center, $a_i$ its area in number of pixels. $s_{ij}$ denotes the computed similarity between segments $i$ and $j$.}
+\end{figure}
