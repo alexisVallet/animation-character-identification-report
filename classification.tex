@@ -1,23 +1,105 @@
 \subsection{Classification}
 \subsubsection{Tree-walk kernel}
+
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=0.7\textwidth]{images/treewalk.png}
+\caption{Examples of tree walks in a graph, from the original paper \cite{harchaoui2007image}.}
+\end{figure}
+
 Our initial idea for classifying the animation characters is to consider the region adjacency graph on the segments of the image. The intuition is that although changes in posture, scale change the overall image significantly, the arrangement of segments in the image relative to each other should roughly stay the same. Classifying images by their region adjacency graph has been studied by Z. Harchaoui and F. Bach in \cite{harchaoui2007image}, in which they a introduce a number of kernels to compute similarity between such graphs. We chose to study and implement the tree-walk kernel presented in this paper.
 
-\paragraph{The method} Let $I$ be a color image, $S = \{S_1, ..., S_q\}$ a segmentation of $I$ and a $4$-connected notion of adjacency between pixels. The region adjacency graph $G$ of $I$ is defined as the graph where vertices are segments and there is an edge between segments $S_i$ and $S_j$ if and only if there is a pair of adjacent pixels $(p_i, p_j) \in S_i \times S_j$. As the $4$-connected graphs are always planar, and the region adjacency graph is a minor of the $4$-connected graph, the region adjacency graph is planar by Wagner's theorem. It should be noted however that the $8$-connected graphs are not planar beyond a grid of size 5 by 5 vertices by Euler's formula on planar graphs, and so using an $8$-connected notion of adjacency could be inappropriate for this method.
+\paragraph{The method} Let $I$ be a color image, $S = \{S_1, ..., S_q\}$ a segmentation of $I$ and a $4$-connected notion of adjacency between pixels. The region adjacency graph $G$ of $I$ is defined as the graph where vertices are segments and there is an edge between segments $S_i$ and $S_j$ if and only if there is a pair of adjacent pixels $(p_i, p_j) \in S_i \times S_j$.
 
-Let $G$ and $H$ be region adjacency graphs with labeling functions $l_g : V(G) \rightarrow L$ and $l_h : V(H) \rightarrow L$, where $L$ is a segment label set. The method considers a kernel function $k : L \times L \rightarrow \mathbb{R}^+ \cup \{0\}$ which measures similarity between segment labels. The authors first define the $p$-th order walk kernel $k_{\mathcal{W}}^p(G,H)$ between $G$ and $H$ as:
+Let $G$ and $H$ be region adjacency graphs with labelling functions $l_g : V(G) \rightarrow L$ and $l_h : V(H) \rightarrow L$, where $L$ is a segment label set. The method considers a kernel function $k : L \times L \rightarrow \mathbb{R}^+ \cup \{0\}$ which measures similarity between segment labels. The authors first define the $p$-th order walk kernel $k_{\mathcal{W}}^p(G,H)$ between $G$ and $H$ as:
 
 \[
-k_{\mathcal{W}}^p(G,H) = \sum_{\substack{(r_1, ...., r_p) \in \mathcal{W}_G^p\\ (s_1, ...., s_p) \in \mathcal{W}_G^p}} \prod_{i=1}^p k(l_G(r_i), l_H(s_i))
+k_{\mathcal{W}}^p(G,H) = \sum_{\substack{(r_1, ...., r_p) \in \mathcal{W}_G^p\\ (s_1, ...., s_p) \in \mathcal{W}_H^p}} \prod_{i=1}^p k(l_G(r_i), l_H(s_i))
 \]
 
-where $\mathcal{W}_G^p$ (resp $\mathcal{W}_H^p$) denotes the set of walks of length at most $p$ in $G$ (resp $H$).
+where $\mathcal{W}_G^p$ (resp. $\mathcal{W}_H^p$) denotes the set of walks of length at most $p$ in $G$ (resp. $H$).
+
+The authors then go on to generalize this kernel not just to walks in the graph, but to what they define as a \emph{tree walk}. An \emph{$\alpha-ary$ tree-walk} in a graph $G$ is any rooted tree whose vertices are vertices of $G$, and neighboring vertices in the tree must be neighbors in $G$. This differs slightly from the definition of a subtree, as this definition allows vertices to be repeated in the tree-walk as they would be in a walk - although 2 adjacent vertices in the tree walk must be distinct.
+
+\begin{figure}[htb!]
+\includegraphics[width=0.7\textwidth]{images/neighborIntervals.png}
+\caption{Neighbor intervals of size $2$, from the original paper \cite{harchaoui2007image}.}
+\end{figure}
+
+Although we could generalize the previous formula for tree walk kernels easily enough, it would be highly inefficient to evaluate as the number of tree walks of a graph is prohibitively large. In order to make this more efficient, we restrict the set of possible children of a given node in the tree walk to intervals in the cyclic order given by the "planar" embedding of the graph given by the segments of the image.
+
+\begin{figure}[htb!]
+\centering
+\begin{tikzpicture}[transform shape]
+% drawing nodes
+\foreach \cx in {1,...,5}{
+  \foreach \cy in {1,...,5}{
+  	\node[draw,circle,fill=black,inner sep=0.05cm] at (\cx,\cy) {};
+  }
+}
+% drawing edges
+\foreach \cx in {1,...,4}{
+  \foreach \cy in {1,...,4}{
+  	\draw (\cx, \cy) edge ({\cx + 1}, \cy);
+  	\draw (\cx, \cy) edge (\cx, {\cy + 1});
+  	\draw (\cx, \cy) edge ({\cx + 1}, {\cy + 1});
+  	\draw ({\cx + 1}, \cy) edge (\cx, {\cy + 1});
+  }
+}
+\foreach \c in {1,...,4}{
+  \draw (\c, 5) edge ({\c + 1}, 5);
+  \draw (5, \c) edge (5, {\c + 1});
+}
+\end{tikzpicture}
+\caption{The $8$-connected graph on a $5$ by $5$ image. It has $n = 25$ vertices and $e = 72$ edges, so Euler's planarity criteria $e \leq 3v - 6$ does not hold. Therefore any larger $8$-connected graph must be non planar.}
+\label{fig:8connplanar}
+\end{figure}
+
+\begin{remark}
+At this point, it is necessary to clarify what is meant by the "planar" embedding of the graph, as it is not described in detail in the original paper. It should be noted that the segmentation method in our program does not necessarily yield a planar embedding of the graph using the gravity center of segments, as the segments may be non convex. In fact the graph may not be planar at all using $8$-connectivity for Felzenszwalb's method. Indeed, the $8$-connected graph is not planar for grids larger than $5$ by $5$ pixels by Euler's formula on planar graphs (see \autoref{fig:8connplanar}), and the segmentation is a minor of this graph, which could very well make it non-planar by Wagner's theorem \cite{wagner1937eigenschaft} - such counterexamples were found in practice using Boyer and Myrvold's planarity testing algorithm \cite{boyer2004cutting}. The hue-based merging post-processing step complicates things further, as it ignores the graph structure entirely. If by any chance the resulting graph is planar, then one can use Boyer and Myrvold's planarity testing algorithm to efficiently determine a planar embedding for the graph, but such an embedding may not be representative of the arrangement of segments in the image, and it may not be unique. So in the following we will refer to the "planar" embedding of the graph induced by the segmentation as the embedding given by gravity center of segments, although it may not be planar in the usual definition - hence the quotes around planar.
+\end{remark}
+
+Applying this, we can define the \emph{$\alpha$-ary tree walk kernel} of depth $p$ between graphs $G$ and $H$, denoted $k^{p, \alpha}_{\mathcal{T}}$, recursively as follows:
+
+\[
+k^{p, \alpha}_{\mathcal{T}}(G,H,r,s) = k(l_G(r), l_H(s)) \sum_{\substack{I \in \mathcal{I}_G^p(r)\\ J \in \mathcal{I}_H^p(s)\\ |I| = |J|}} \prod_{\substack{r' \in I \\ s' \in J}} k^{p - 1, \alpha}_{\mathcal{T}}(G,H,r',s')
+\]
+
+Where $k^{1, \alpha}_{\mathcal{T}}(G,H,r,s) = k(l_G(r), l_H(s))$. The final kernel between graphs $G$ and $H$ is then given by summing the recursive kernel for each pairs of root vertices:
+
+\[
+k^{p, \alpha}_{\mathcal{T}}(G,H) = \sum_{\substack{r \in V(G)\\ s \in V(H)}} k^{p, \alpha}_{\mathcal{T}}(G,H,r,s)
+\]
+
+Using this kernel as a similarity measure between segmentation graphs, we then classify them using the nearest neighbor rule. Although the original paper suggests using color histograms as segment labels, for animation image we found average $L*a*b*$ color to perform as well and to be more efficient. We therefore used a simple Gaussian kernel weighted for segment areas:
+
+\[
+k(l_1,l_2) = A_1A_2e^{-\frac{||l_1 - l_2||}{\sigma^2}}
+\]
+
+Where $A_1$ and $A_2$ are the areas of segment labelled by $l_1$ and $l_2$ respectively.
+
+\paragraph{Theoretical justification} The idea of comparing graphs for similarity leads us to the problems of graph matching, inexact graph matching and subgraph matching. However these are impractical to solve, and are anyway undesirable - we want to compare graph in a looser fashion. The authors of the original paper therefore combine approaches inspired from text classification and kernel methods to derive the tree walk kernel, and go further to show how the framework of multiple kernel learning can be used to determine the best parameters.
+
+\paragraph{Implementation} Using methods from dynamic programming, we can derive a polynomial time implementation which runs fast in practice. The authors show that, given graphs $G$ and $H$ with maximum degrees $d_G$ and $d_H$ and $n_G$, $n_H$ number of vertices respectively, the algorithm can be implemented to run in $O(p\alpha^2d_Gd_Hn_Gn_H)$ time to compute all $\alpha$-ary tree walk kernels of depth at most $p$.
+
+\paragraph{Results and analysis} The method performed poorly for our purposes, in part because it relies on many parameters which are very difficult to choose.
+
+Further, it seems that the segmentation graphs for animation images have a lot of variations in the smaller substructures of the graph, which makes the relevance of small tree-walks of the graph doubtful for measuring similarity in more global features of the graph. Indeed, computing tree walks of large depth and arity to capture the larger scale features of the graph was found to be impractical. The run time of the algorithm becomes quickly unacceptable for most applications, and is explained by the polynomial complexity of the tree walk kernel computation.
+
+However, it should be noted that the segment matching solution (see \autoref{sec:segmentMatching}), which performed best on our datasets, resembles in many ways the tree walk kernel method, using segment labels and similarity measures between segments to compute an overall similarity for the image, weighing results by segment area. While our method performs better in practice, it lacks a sound theoretical grounding, which could be provided by studying how these two methods relate.
+
+Furthermore, study of the multiple kernel learning method described in the original paper and other works by Bach \cite{bach2004multiple} may give a solution to the problem of choosing the right parameters for the algorithm.
 
 \subsubsection{Segmentation graph spectral classification methods}
-The tree walk kernels method performed poorly in part because it relies overly on the region adjacency graph of the image, whose structure changes significantly with image variations. In an effort to match graph structure more loosely, we considered the results from spectral graph theory which attempt to analyze graphs through the eigenvalues and eigenvectors of its Laplacian. Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode in a sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images.
+The tree walk kernels method performed poorly in part because it relies overly on the smaller variations of the region adjacency graph of the image. In an effort to match graph structure more loosely, we considered the results from spectral graph theory which attempt to analyse graphs through the eigenvalues and eigenvectors of its Laplacian. Works by Wilson, Zhu, Hancock and Luo showed that such spectral methods could be used for graph pattern matching, including image classification through shock graphs \cite{wilson2005pattern}\cite{wilson2008study}. Furthermore, works in graph cut algorithms and application to clustering \cite{ng2002spectral} and segmentation\cite{shi2000normalized}\cite{meila2001random} showed that the eigenvectors of the Laplacian corresponding to smaller eigenvalue encode to some extent sense the global structure of the graph, while ignoring smaller details. We hoped this would allow the method to be robust to variations in animation character images.
 
-\paragraph{The method} For each segmentation $S$, we consider $m$ features $(f_i : S \Rightarrow \mathbb{R}_i^q)_{1 \leq i \leq m}$. For instance, we used average $L*a*b*$ color, gravity center and area of the segment as features. For each feature $f_i$, we compute the $K$-nearest neighbor graph $G_i$ on $S$ with edges weighted by the Gaussian kernel $w(S_u,S_v) = e^{-\frac{||f_i(S_u) - f_i(S_v)||^2}{\sigma_i^2}}$, and its corresponding combinatorial Laplacian  $L_i$ (see \autoref{sec:laplacians} for definitions).
+\paragraph{The method} For each segmentation $S$, we consider $m$ features $(f_i : S \rightarrow \mathbb{R}_i^q)_{1 \leq i \leq m}$. For instance, we used average $L^*a^*b*$ color, gravity center and area of the segment as features. For each feature $f_i$, we compute the $K$-nearest neighbor graph $G_i$ on $S$ with edges weighted by the Gaussian kernel $w(S_u,S_v) = e^{-\frac{||f_i(S_u) - f_i(S_v)||^2}{\sigma_i^2}}$, and its corresponding combinatorial Laplacian  $L_i \in \mathbb{R}^{n \times n}$ where $n$ is the number of segments (see \autoref{sec:laplacians} for definitions). 
 
+
+We then use the method from Wilson, Hancock and Luo \cite{wilson2005pattern} to determine a pattern vector for the graph. To do so, we consider the $k$ eigenvectors $(e_1, ..., e_k)$ corresponding to the $k$ smallest non-zero eigenvalues $(\lambda_1, ..., \lambda_k)$ of $L_i$. 
 
 
 
 \subsubsection{Segment matching method}
+\label{sec:segmentMatching}
