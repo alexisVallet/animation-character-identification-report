@@ -1,0 +1,37 @@
+\section{Possible improvements and extensions}
+\label{sec:extensions}
+\subsection{Using training data to determine an ideal color space}
+
+The segment matching method, although it performs best in practice compared to the other methods, has trouble distinguishing characters drawing from a similar color palette.
+
+Right now, the method uses the $L^*a^*b^*$ color space to compare colors against each other during prediction. The rationale behind this choice is that the $L^*a^*b^*$ color system aims to be perceptually uniform, and therefore is close in some sense to human perception. However, this may not be a desirable feature for classification, as different characters may share perceptually similar color palettes. 
+
+Using this reasoning, we could use training data to derive an "abstract" color space for ideal clustering of the training data. In such a color space, humanly imperceptible nuances of color between characters could be significant, while perceptually large differences between samples for the same character could be smoothed out.
+
+Let us consider a color image $I$, and its color histogram $H_I$ with $k$ bins per channels. If we take the average color of each of the $l$ most represented bins, we get some sort of color palette for the image. If we consider $n$ labelled (or possibly unlabelled) training images in $c$ classes, we can consider these colors as our new training samples labelled with the label of the original image. Embedding this data in some higher-dimensional space where it would be linearly separable - using manifold learning methods with a kernel function taking into account training data such as the one in \cite{urahama2007semi} for instance - could give us a color subspace on which to project new test samples before classification.
+
+It is however unclear how one would avoid the curse of dimensionality in this case - we would need a $cl$-dimensional space to make sure each color of each character is linearly separable. As the segment matching method only relies on euclid distance in feature space, one could easily apply the kernel trick to the algorithm to tackle the issue. How such a kernel would incorporate training information remains to be solved, however. Further study of the literature on manifold learning, including methods for dimensionality reduction \cite{roweis2000nonlinear}
+\cite{belkin2003laplacian}
+\cite{saul2006spectral}, spectral clustering \cite{shi2000normalized}
+\cite{grady2006isoperimetric}
+\cite{ng2002spectral}
+\cite{meila2001random} and semi-supervised classification \cite{urahama2007semi} could provide an answer to these questions.
+
+\subsection{Further study of segmentation graph based methods}
+\label{sec:extensionSegGraph}
+A straightforward generalization of the segment matching method would have consider not just one-to-one relations on the sets of segments, but $k$-to-$k$ for small $k$. Enumerating all such possible combinations may however be intractable. Drawing inspiration from the tree walk kernels method \cite{harchaoui2007image}, one could use a graph structure on the set of segment to reduce the size of the space to explore - for instance a $K$-nearest neighbor graph. This leads us to consider sequences of distinct, adjacent segments on this graph, e.g. paths on length $k$ on the graph. Using reasoning similar to the ones in \cite{harchaoui2007image}, one might be able to derive efficient dynamic programming implementations to compute similarities between all such paths - as all $3$ features we consider can be computed efficiently for sets of segments from the features of the individual segments.
+
+Such a generalization would make the hue-based segment merging step of segmentation, which is mostly heuristic and greedy, mostly redundant using a proper graph structure. Further, although such graphs have proven insufficient on their own for animation image classification, perhaps this graph structure on the images can be beneficial to distinguishing characters with otherwise similar features.
+
+This reasoning also makes clear that the segment matching method is related in some sense to the tree walk kernels method. Although our method lacks a sound theoretical grounding, the tree walk kernel doesn't and studying how they relate might provide important information about our method. Namely, and as has been mentioned in the previous section, our algorithm could easily benefit from the kernel trick.
+
+\subsection{Background extraction}
+Right now, our method expects animation character images whose background has already been removed - manually in the case of our dataset. In practice however, and as can be easily seen in web artist communities, animation images typically have a background, which rarely ever contains information relevant to identification. Background extraction or removal would therefore be a necessary step for our method to be useful in practice.
+
+In the case of human images, the state of the art to identify the human when there is background present is to detect the face of the person using a method such as the Viola-Jones algorithm \cite{viola2004robust}, and then to use a state of the art face recognition method such as the Eigenfaces or Fisherfaces algorithm \cite{turk1991eigenfaces} \cite{belhumeur1997eigenfaces}.
+
+This technique cannot be directly applied to animation characters, as the face information is almost never relevant to identification - there is both too much variations by drawing style and too much uniformity in the way animation character faces are drawn for this. We would like to consider ideally the full body of the character, or at least a large part of the body.
+
+We could still apply the Viola-Jones algorithm to detect the important parts of the character for identification - for instance hair, face, clothes, arms and legs - by using proper training data. Using some kind of abstract skeleton describing how these parts should be structured in the image, perhaps for different types of postures, one could then reasonably extract the entire body from the background. Our segment matching algorithm - or an improvement over it - can then identify the character.
+
+There are however still many hurdles on the way to solve this problem, and many experiments to perform to test our hypothesises.

@@ -74,6 +74,7 @@ L_{rw} = D^{-1}L = I - D^{-1}A \quad \Leftrightarrow \quad (L_{rw})_{uv} = \begi
 and $D^{-1}$ is defined similarly to $D^{-\frac{1}{2}}$.
 
 \subsection{Image processing}
+\label{sec:imageProcessing}
 In this document, an \emph{image} $I$ is a function $I : \{1, ..., h\} \times \{1, ..., w\} \rightarrow \{0, ..., 2^d - 1\}^c$ where $h$ is the \emph{height} of the image, $w$ its \emph{width}, $d$ its \emph{depth} and $c$ its \emph{number of channels}.  $I$ is called a \emph{color image} if and only if $c = 3$, and a \emph{grayscale} image if and only if $c = 1$.
 
 Let $I$ be an image, and $G = (V,E)$ be a graph where $V = dom(I)$ is the set of pixel coordinates of $I$. A \emph{segmentation} $S = \{S_1, ..., S_m\}$ is a partition of $V$ where each $S_i$ is a connected component in $G$. Common graphs considered for segmentation are:

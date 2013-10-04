@@ -13,6 +13,7 @@
 \usepackage[noend]{algpseudocode}
 \usepackage[sorting=none,backend=bibtex,style=numeric]{biblatex}
 \usepackage{subcaption}
+\usepackage{listings}
 \bibliography{bibliography/aci-bibliography}
 
 \title{Animation character identification from color images}
@@ -30,11 +31,12 @@
 
 % 1 page
 \input{introduction}
-
+\newpage
 % 1 page
 \input{thanks}
-
+\newpage
 % 1 page
+\setcounter{tocdepth}{3}
 \tableofcontents
 
 % 2-3 pages
@@ -43,6 +45,7 @@
 % around 40 pages
 \input{work}
 
+\newpage
 % 2-3 pages
 \input{conclusion}
 

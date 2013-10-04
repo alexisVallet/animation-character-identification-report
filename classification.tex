@@ -91,7 +91,7 @@ However, it should be noted that the segment matching solution (see \autoref{sec
 
 Furthermore, study of the multiple kernel learning method described in the original paper and other works by Bach \cite{bach2004multiple} may give a solution to the problem of choosing the right parameters for the algorithm.
 
-\subsubsection{Segmentation graph spectral classification methods}
+\subsubsection{Segmentation graph spectral classification method}
 The tree walk kernels method performed poorly in part because it relies overly on the smaller variations of the region adjacency graph of the image. In an effort to match graph structure more loosely, we considered the results from spectral graph theory which attempt to analyse graphs through the eigenvalues and eigenvectors of its Laplacian. 
 
 \paragraph{The method} For each segmentation $S$, we consider $m$ features $(f_i : S \rightarrow \mathbb{R}_i^q)_{1 \leq i \leq m}$. For instance, we used average $L^*a^*b^*$ color, gravity center and area of the segment as features. For each feature $f_i$, we compute the $K$-nearest neighbor graph $G_i$ on $S$ with edges weighted by the Gaussian kernel $w(S_u,S_v) = e^{-\frac{||f_i(S_u) - f_i(S_v)||^2}{\sigma_i^2}}$, and its corresponding combinatorial Laplacian  $L_i \in \mathbb{R}^{n \times n}$ where $n$ is the number of segments (see \autoref{sec:laplacians} for definitions).
@@ -169,26 +169,10 @@ Further, the theory behind the algorithm is not completely sound. The paper by W
 
 \subsubsection{Segment matching method}
 \label{sec:segmentMatching}
-\begin{figure}[htb!]
-\centering
-\begin{subfigure}{0.24\textwidth}
-\includegraphics[width=\textwidth]{images/rufy_d.png}
-\end{subfigure}
-\begin{subfigure}{0.24\textwidth}
-\includegraphics[width=\textwidth]{images/rufy_original2.png}
-\end{subfigure}
-\begin{subfigure}{0.24\textwidth}
-\includegraphics[width=\textwidth]{images/luffy_match1.png}x
-\end{subfigure}
-\begin{subfigure}{0.24\textwidth}
-\includegraphics[width=\textwidth]{images/luffy_match2.png}
-\end{subfigure}
-\caption{Original images (left) and corresponding relation (right). Segments with the same color are matched together.}
-\end{figure}
 
 One of the big issues with the previous methods comes from the graphs on the set of segments of a single image not encoding enough information from the image for classification. In an effort to extract more information from the image and to compare the segment information between images directly, we tried to consider how one could match segments between $2$ segmentations, so matched segments could correspond to the same part of the character. This resulted in the following method.
 
-\paragraph{The method} We once again consider some features on the set of segments of the image, namely average $L^*a^*b^*$ color, gravity center and area of the segment. We compute similarity between the segments of $2$ images using a fuzzy control system taking the similarity in features as inputs, and returning an overall similarity of the $2$ segments.
+\paragraph{The method} We once again consider some features on the set of segments of the image, namely average $L^*a^*b^*$ color, gravity center and area of the segment. Let us consider two color images $I$ and $J$ with segmentations $S = \{S_1, ..., S_n\}$ and $T = \{T_1, ..., T_m\}$ respectively.
 
 \begin{figure}[htb!]
 \centering
@@ -210,10 +194,9 @@ One of the big issues with the previous methods comes from the graphs on the set
 \end{tikzpicture}
 \caption{Inputs and output.}
 \end{subfigure}
-
-\begin{subfigure}{\textwidth}
+\begin{subfigure}{0.4\textwidth}
 \centering
-\begin{tikzpicture} 
+\begin{tikzpicture}[scale=0.5]
 \begin{axis}[xlabel=input similarity,ylabel=membership,
 legend style={
 at={(0,0)},
@@ -226,12 +209,11 @@ anchor=north east}]
 \addlegendentry{High}
 \end{axis}
 \end{tikzpicture}
-\caption{Membership functions for inputs.}
+\caption{Inputs membership functions.}
 \end{subfigure}
-
-\begin{subfigure}{\textwidth}
+\begin{subfigure}{0.4\textwidth}
 \centering
-\begin{tikzpicture}
+\begin{tikzpicture}[scale=0.5]
 \begin{axis}[xlabel=input similarity,ylabel=membership,
 legend style={
 at={(0,0)},
@@ -243,10 +225,117 @@ anchor=north east}]
 \addplot coordinates {(0,0) (0.33,0) (0.66, 1) (1, 0)};
 \addlegendentry{High}
 \addplot coordinates {(0,0) (0.66, 0) (1, 1)};
-\addlegendentry{Veryhigh}
+\addlegendentry{Very high}
 \end{axis}
 \end{tikzpicture}
-\caption{Membership functions for output.}
+\caption{Output membership functions.}
 \end{subfigure}
-\caption{Fuzzy control system (FCS) for segment similarity. For a segment $i$, $c_i$ denotes its average color, $x_i$ the coordinates of its gravity center, $a_i$ its area in number of pixels. $s_{ij}$ denotes the computed similarity between segments $i$ and $j$.}
+\caption{Fuzzy control system (FCS) for segment similarity. For a segment $i$, $c_i$ denotes its average color, $x_i$ the coordinates of its gravity center, $a_i$ its area in number of pixels. $s_{ij}$ denotes the computed similarity between segments $S_i$ and $T_j$.}
+\label{fig:segmentFCS}
 \end{figure}
+
+We compute similarity between the segments of the $2$ images using a fuzzy control system taking the similarity in features as inputs, and returning an overall similarity of the $2$ segments (see \autoref{fig:segmentFCS}). The rules of the fuzzy control system were defined so closeness of the segments reinforces similarity when the other features coincide already, but does not decrease similarity much when the positions do not coincide (see \autoref{fig:segmentRules}). The intent being to introduce robustness to variations in posture and occlusion of body parts by the frame of the image, which make segment position an unreliable indicator. 
+
+\begin{figure}[htb!]
+\centering
+\begin{lstlisting}[language=C++,showstringspaces
+=false,breaklines=true]
+string ruleStrings[] = {
+	"if Color is HIGH and Area is HIGH and Position is HIGH then Similarity is VERYHIGH",
+	"if Color is HIGH and Area is HIGH and Position is MEDIUM then Similarity is HIGH",
+	"if Color is HIGH and Area is HIGH and Position is LOW then Similarity is HIGH",
+	"if Color is MEDIUM and Area is HIGH then Similarity is MEDIUM",
+	"if Area is MEDIUM and Color is HIGH then Similarity is MEDIUM",
+	"if Area is MEDIUM and Color is MEDIUM then Similarity is LOW",
+	"if Area is LOW or Color is LOW then Similarity is LOW",
+	""
+};
+\end{lstlisting}
+\caption{Rules of the fuzzy control system in the syntax of the fuzzylite C++ library \cite{fl::fuzzylite}.}
+\label{fig:segmentRules}
+\end{figure}
+
+We used the defaults of the fuzzylite library \cite{fl::fuzzylite} as choices of t-norms, s-norms and defuzzyfiers. Each scale parameter $\sigma_c$, $\sigma_x$ and $\sigma_a$ is automatically determined by computing the variance of the euclidean distances in feature space between all pairs of segments from the $2$ images. Given feature $f_k : S \cup T \rightarrow \mathbb{R}^p$, the corresponding scale parameter $\sigma_k$ is computed by the following formula:
+
+\[
+\sigma_k^2 = (\frac{1}{nm}\sum_{i = 1}^n\sum_{j = 1}^m ||f_k(S_i) - f_k(T_j)||^2) - \mu_k^2
+\]
+
+Where $\mu_k$ is the mean for feature $f_k$:
+
+\[
+\mu_k = \frac{1}{nm}\sum_{i = 1}^n \sum_{j = 1}^m ||f_k(S_i) - f_k(T_j)||
+\]
+
+\begin{figure}[htb!]
+\centering
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/rufy_d.png}
+\end{subfigure}
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/rufy_original2.png}
+\end{subfigure}
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/luffy_match1.png}x
+\end{subfigure}
+\begin{subfigure}{0.24\textwidth}
+\includegraphics[width=\textwidth]{images/luffy_match2.png}
+\end{subfigure}
+\caption{Original images (left) and corresponding relation (right). Segments with the same color are matched together.}
+\label{fig:matchingImages}
+\end{figure}
+
+Using the similarity measures $(s_{ij})_{\substack{1 \leq i \leq n\\ 1 \leq j \leq m}}$ provided by the fuzzy control system, we now determine a one-to-one relation between two segmentations $S$ and $T$ such that $2$ similar segments are related to each other. For this purpose, we designed a simple algorithm to determine such a relation (\autoref{alg:segmentMatching}). An example relation is shown in \autoref{fig:matchingImages}.
+
+\begin{algorithm}
+\caption{Segment matching algorithm.}
+\label{alg:segmentMatching}
+
+\begin{algorithmic}[1]
+\Function{SegmentMatching}{$S = \{S_1, ..., S_n\}, T = \{T_1, ..., T_m\}$}
+\State Compute $(s_{ij})_{\substack{1 \leq i \leq n\\ 1 \leq j \leq m}}$ using the fuzzy control system.
+\State Sort the $s_{ij}$ by descending similarity into $(e_1, ..., e_{nm})$.
+\State $R \gets \emptyset$
+\For{$k \gets 1$ to $nm$}
+\State Let $(S_i,T_j) \in S \times T$ be the segments corresponding to similarity $e_k$.
+\If{neither $S_i$ nor $T_j$ are related to another segment  by $R$}
+\State $R \gets R \cup \{(S_i, T_j)\}$
+\EndIf
+\EndFor
+\Return $R$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+From this one to one relation $R$ and the corresponding similarity measures $s_{ij}$, we measure overall similarity between segmentations $S$ and $T$ using a sum of the segment-wise similarities, weighted by segment size:
+
+\[
+sim(S,T) = \sum_{(S_i,T_j) \in R}(|S_i| + |T_j|)s_{ij}
+\]
+
+We then classify images according to the nearest neighbor rule by this measure of similarity.
+
+\paragraph{Theoretical justification}
+This method was designed to correct the flaws of the previous methods. As such, it focuses on comparing segment data directly between $2$ images instead of trying to extract features from a single image, and classify them according to this. Although this is fruitful in practice (see the results and analysis paragraph), this approach lacks a solid theoretical foundation - although there are certainly interesting invariants to prove about the algorithm which provides the one-to-one relation, much work remains to be done.
+
+Most standard classifiers (support vector machines, normal bayes classifier, artificial neural networks) expect feature vectors for each sample, which our method doesn't provide, hence why we consider simply the nearest neighbor for classification. There are however a number of dimensionality reduction \cite{roweis2000nonlinear} \cite{belkin2003laplacian}, clustering \cite{von2007tutorial} and classification \cite{urahama2007semi} methods considering an arbitrary similarity matrix on the data like the one we have here, or can easily be extended to support this kind of input. Further theoretical work could borrow from these methods.
+
+\paragraph{Implementation}
+Consider once again $2$ color images $I$ and $J$, and corresponding segmentations $S = \{S_1, ..., S_n\}$ and $T = \{T_1, ..., T_m\}$.
+
+Assuming features have been precomputed, computing $s_{ij}$ for a given pair of segments can be done in constant $O(1)$ time, given that the fuzzy control system has a constant number of inputs, outputs and rules, so computing all the $s_{ij}$ takes $O(nm)$ time. Sorting the similarities can then be done in $O(nm\log(nm))$ time using an optimal comparison sort such as merge sort. Producing the relation then takes $O(nm)$ time, using a list of pairs for the relation with a boolean array indicating segment membership in the relation, which takes $O(nm)$ space. Segment sizes can be retrieved in $O(\alpha(n) + \alpha(m))$ time, where $\alpha$ is the inverse of the Ackermann function, using a disjoint set forest data structure for the segmentations, and the relation has at worst $\min(n,m)$ members as it is one to one by construction so $sim(S,T)$ can be computed in $O(\min(n,m)(\alpha(n) + \alpha(m)))$ time from $R$. So overall, computing the similarity between $2$ segmentations whose features have already been computed takes $O(nm\log(nm))$. Computing the nearest neighbor then simply requires computing this similarity between the test sample and the training samples, whose features can be precomputed as part of the training procedure.
+
+In practice this is quite fast, as the number of segments in the images is quite small for a large enough scale parameter $k$ to Felzenszwalb's method.
+
+\paragraph{Results and analysis}
+With a dataset containing $12$ different characters with $15$ sample images for each, the method has a $59$\% recognition rate measured by leave one out cross-validation.
+
+Furthermore, the recognition rate scales well with the size of the dataset. Indeed, increasing the number of sample images per character from $5$ to $15$ increased recognition rate from $35$\% to $59$\% (see \autoref{fig:recognitionRates}). This indicates a certain degree of robustness to noise in the data - which was collected manually from the internet. More importantly, web artist communities such as Pixiv or deviantArt have thousands of images for each character, a number quickly increasing over time, which make this property very relevant.
+
+\begin{figure}[htb!]
+\includegraphics[width=\textwidth]{images/recognitionRate.png}
+\caption{Recognition rate of the segment matching method by number of images per character.}
+\label{fig:recognitionRates}
+\end{figure}
+
+The method does have trouble with characters sharing a similar color palette - for instance, when character have both the same hair color and the same clothes color, or otherwise large segments of similar color. Furthermore, it does not have a well defined theoretical grounding which would allow us to prove interesting properties about the algorithm.
