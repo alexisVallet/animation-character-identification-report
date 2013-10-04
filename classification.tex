@@ -51,12 +51,12 @@ Although we could generalize the previous formula for tree walk kernels easily e
   \draw (5, \c) edge (5, {\c + 1});
 }
 \end{tikzpicture}
-\caption{The $8$-connected graph on a $5$ by $5$ image. It has $n = 25$ vertices and $e = 72$ edges, so Euler's planarity criteria $e \leq 3v - 6$ does not hold. Therefore any larger $8$-connected graph must be non planar.}
+\caption{The $8$-connected graph on a $5$ by $5$ image. It has $v = 25$ vertices and $e = 72$ edges, so Euler's planarity criteria $e \leq 3v - 6$ does not hold. Therefore any larger $8$-connected graph must be non planar.}
 \label{fig:8connplanar}
 \end{figure}
 
 \begin{remark}
-At this point, it is necessary to clarify what is meant by the "planar" embedding of the graph, as it is not described in detail in the original paper. It should be noted that the segmentation method in our program does not necessarily yield a planar embedding of the graph using the gravity center of segments, as the segments may be non convex. In fact the graph may not be planar at all using $8$-connectivity for Felzenszwalb's method. Indeed, the $8$-connected graph is not planar for grids larger than $5$ by $5$ pixels by Euler's formula on planar graphs (see \autoref{fig:8connplanar}), and the segmentation is a minor of this graph, which could very well make it non-planar by Wagner's theorem \cite{wagner1937eigenschaft} - such counterexamples were found in practice using Boyer and Myrvold's planarity testing algorithm \cite{boyer2004cutting}. The hue-based merging post-processing step complicates things further, as it ignores the graph structure entirely. If by any chance the resulting graph is planar, then one can use Boyer and Myrvold's planarity testing algorithm to efficiently determine a planar embedding for the graph, but such an embedding may not be representative of the arrangement of segments in the image, and it may not be unique. So in the following we will refer to the "planar" embedding of the graph induced by the segmentation as the embedding given by gravity center of segments, although it may not be planar in the usual definition - hence the quotes around planar.
+At this point, it is necessary to clarify what is meant by the "planar" embedding of the graph, as it is not described in detail in the original paper. It should be noted that the segmentation method in our program does not necessarily yield a planar embedding of the graph using the gravity center of segments, as the segments may be non convex. In fact the graph may not be planar at all using $8$-connectivity for Felzenszwalb's method. Indeed, the $8$-connected graph is not planar for grids larger than $5$ by $5$ pixels by Euler's formula on planar graphs (see \autoref{fig:8connplanar}), and the segmentation is a minor of this graph, which could very well make it non-planar by Wagner's theorem \cite{wagner1937eigenschaft} - such counterexamples were found in practice using Boyer and Myrvold's planarity testing algorithm \cite{boyer2004cutting}. The hue-based merging post-processing step complicates things further, as it ignores the graph structure entirely. If by any chance the resulting graph is planar, then one can use Boyer and Myrvold's planarity testing algorithm to efficiently determine a planar embedding for the graph, but such an embedding may not be representative of the arrangement of segments in the image, and it may not be unique. So in the following we will refer to the "planar" embedding of the graph induced by the segmentation as the embedding given by gravity center of segments, although it may not be planar in the usual definition - hence the quotes around "planar".
 \end{remark}
 
 Applying this, we can define the \emph{$\alpha$-ary tree walk kernel} of depth $p$ between graphs $G$ and $H$, denoted $k^{p, \alpha}_{\mathcal{T}}$, recursively as follows:
@@ -65,7 +65,7 @@ Applying this, we can define the \emph{$\alpha$-ary tree walk kernel} of depth $
 k^{p, \alpha}_{\mathcal{T}}(G,H,r,s) = k(l_G(r), l_H(s)) \sum_{\substack{I \in \mathcal{I}_G^p(r)\\ J \in \mathcal{I}_H^p(s)\\ |I| = |J|}} \prod_{\substack{r' \in I \\ s' \in J}} k^{p - 1, \alpha}_{\mathcal{T}}(G,H,r',s')
 \]
 
-Where $k^{1, \alpha}_{\mathcal{T}}(G,H,r,s) = k(l_G(r), l_H(s))$. The final kernel between graphs $G$ and $H$ is then given by summing the recursive kernel for each pairs of root vertices:
+Where $k^{1, \alpha}_{\mathcal{T}}(G,H,r,s) = k(l_G(r), l_H(s))$, and $\mathcal{I}_G^p(r)$ (resp. $\mathcal{I}_H^p(s)$) denotes the set of neighbor intervals of length at most $p$ of vertex $r$ in $G$ (resp. $s$ in $H$). The final kernel between graphs $G$ and $H$ is then given by summing the recursive kernel for each pairs of root vertices:
 
 \[
 k^{p, \alpha}_{\mathcal{T}}(G,H) = \sum_{\substack{r \in V(G)\\ s \in V(H)}} k^{p, \alpha}_{\mathcal{T}}(G,H,r,s)
@@ -83,7 +83,7 @@ Where $A_1$ and $A_2$ are the areas of segment labelled by $l_1$ and $l_2$ respe
 
 \paragraph{Implementation} Using methods from dynamic programming, we can derive a polynomial time implementation which runs fast in practice. The authors show that, given graphs $G$ and $H$ with maximum degrees $d_G$ and $d_H$ and $n_G$, $n_H$ number of vertices respectively, the algorithm can be implemented to run in $O(p\alpha^2d_Gd_Hn_Gn_H)$ time to compute all $\alpha$-ary tree walk kernels of depth at most $p$.
 
-\paragraph{Results and analysis} The method performed poorly for our purposes, in part because it relies on many parameters which are very difficult to choose.
+\paragraph{Results and analysis} The method performed poorly for our purposes, partly because it relies on many parameters which are very difficult to choose.
 
 Further, it seems that the segmentation graphs for animation images have a lot of variations in the smaller substructures of the graph, which makes the relevance of small tree-walks of the graph doubtful for measuring similarity in more global features of the graph. Indeed, computing tree walks of large depth and arity to capture the larger scale features of the graph was found to be impractical. The run time of the algorithm becomes quickly unacceptable for most applications, and is explained by the polynomial complexity of the tree walk kernel computation.
 
@@ -123,9 +123,9 @@ So, for each column $\Phi_i = \sqrt{\lambda_i}e_i$ of $\Phi$, we apply each symm
 
 \[
 E_i = \begin{pmatrix}
-signum(P_1(\Phi_i)) ln(1 + |P_1(\Phi_i)|) \\
+signum(P_1(\Phi_i)) \ln(1 + |P_1(\Phi_i)|) \\
 ... \\
-signum(P_n(\Phi_i)) ln(1 + |P_n(\Phi_i)|)
+signum(P_n(\Phi_i)) \ln(1 + |P_n(\Phi_i)|)
 \end{pmatrix}
 \] 
 
@@ -156,7 +156,7 @@ P_r = \frac{(-1)^{r+1}}{r} \sum_{i = 1}^r (-1)^{i + r}Q_iP_{r - i}
 \]
 
 
-Where $Q_0$ denotes the constant $1$ polynomial. One can first compute all the power symmetric functions in $O(n^2)$ time by accumulating the exponentiation of the terms of the sum from one polynomial to the next. We can then compute all the elementary symmetric polynomials by accumulating the inner sum of the Newton-Girard formula in $O(n^2)$ for a total $O(n^2)$ running time. So evaluating the feature vector for all columns of $\Phi$ takes $O(kn^2)$ run time.
+Where $P_0$ denotes the constant $1$ polynomial. One can first compute all the power symmetric functions in $O(n^2)$ time by accumulating the exponentiation of the terms of the sum from one polynomial to the next. We can then compute all the elementary symmetric polynomials by accumulating the inner sum of the Newton-Girard formula in $O(n^2)$ for a total $O(n^2)$ running time. So evaluating the feature vector for all columns of $\Phi$ takes $O(kn^2)$ run time.
 
 So the procedure to compute the pattern vector for a single image runs in $O(q + (k + l)n^2)$ time.
 
@@ -323,7 +323,7 @@ Most standard classifiers (support vector machines, normal bayes classifier, art
 \paragraph{Implementation}
 Consider once again $2$ color images $I$ and $J$, and corresponding segmentations $S = \{S_1, ..., S_n\}$ and $T = \{T_1, ..., T_m\}$.
 
-Assuming features have been precomputed, computing $s_{ij}$ for a given pair of segments can be done in constant $O(1)$ time, given that the fuzzy control system has a constant number of inputs, outputs and rules, so computing all the $s_{ij}$ takes $O(nm)$ time. Sorting the similarities can then be done in $O(nm\log(nm))$ time using an optimal comparison sort such as merge sort. Producing the relation then takes $O(nm)$ time, using a list of pairs for the relation with a boolean array indicating segment membership in the relation, which takes $O(nm)$ space. Segment sizes can be retrieved in $O(\alpha(n) + \alpha(m))$ time, where $\alpha$ is the inverse of the Ackermann function, using a disjoint set forest data structure for the segmentations, and the relation has at worst $\min(n,m)$ members as it is one to one by construction so $sim(S,T)$ can be computed in $O(\min(n,m)(\alpha(n) + \alpha(m)))$ time from $R$. So overall, computing the similarity between $2$ segmentations whose features have already been computed takes $O(nm\log(nm))$. Computing the nearest neighbor then simply requires computing this similarity between the test sample and the training samples, whose features can be precomputed as part of the training procedure.
+Assuming features have been precomputed, computing $s_{ij}$ for a given pair of segments can be done in constant $O(1)$ time, given that the fuzzy control system has a constant number of inputs, outputs and rules, so computing all the $s_{ij}$ takes $O(nm)$ time. Sorting the similarities can then be done in $O(nm\log(nm))$ time using an optimal comparison sort such as merge sort. Producing the relation then takes $O(nm)$ time, using a list of pairs for the relation with a boolean array indicating segment membership in the relation, which takes $O(nm)$ space. Segment sizes can be retrieved in $O(\alpha(n) + \alpha(m))$ time, where $\alpha$ is the inverse of the Ackermann function, using a disjoint set forest data structure for the segmentations, and the relation has at worst $\min(n,m)$ members as it is one to one by construction so $sim(S,T)$ can be computed in $O(\min(n,m)(\alpha(n) + \alpha(m)))$ time from $R$. So overall, computing the similarity between $2$ segmentations whose features have already been computed takes $O(nm\log(nm))$ time. Computing the nearest neighbor then simply requires computing this similarity between the test sample and the training samples, whose features can be precomputed as part of the training procedure.
 
 In practice this is quite fast, as the number of segments in the images is quite small for a large enough scale parameter $k$ to Felzenszwalb's method.
 

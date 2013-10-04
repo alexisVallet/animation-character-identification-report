@@ -21,7 +21,7 @@
 
 The segmentation method by P. F. Felzenszwalb and D. P. Huttenlocher, described in detail in \cite{felzenszwalb2004efficient}, is an efficient graph-based segmentation method for color images.
 
-\paragraph{The method} Let $I$ be a color image. The algorithm considers a graph $G = (V,E)$ defined on the set of pixels of $I$ with weight function $w$ measuring dissimilarity between pixels. Let $n$ be the number of vertices and $m$ the number of edges of $G$. The pseudo code of the algorithm is given in algorithm \autoref{alg:felzenszwalb}, where $MInt : S \times S \rightarrow \mathbb{R}^+$ for some segmentation $S$ is defined by:
+\paragraph{The method} Let $I$ be a color image. The algorithm considers a graph $G = (V,E)$ defined on the set of pixels of $I$ with a weight function $w$ measuring dissimilarity between pixels. Let $n$ be the number of vertices and $m$ the number of edges of $G$. The pseudo code of the algorithm is given in algorithm \autoref{alg:felzenszwalb}, where $MInt : S \times S \rightarrow \mathbb{R}^+$ for some segmentation $S$ is defined by:
 \[
 MInt(C_1, C_2) = \min(Int(C_1) + \tau(C_1), Int(C_2) + \tau(C_2))
 \]
@@ -55,9 +55,12 @@ Note that in our case, we consider a slightly different threshold function to al
 \end{algorithmic}
 \end{algorithm}
 
-\paragraph{Theoretical justification} The authors show that this algorithm results in a segmentation which is neither too coarse nor too fine, according to a precise notion of boundary between segments. This is interesting for animation character images, which are characterized by large areas of homogeneous color, which this algorithm capture reasonably well.
+\paragraph{Theoretical justification} The authors show that this algorithm results in a segmentation which is neither too coarse nor too fine, according to a precise notion of boundary between segments. This is interesting in the case of animation character images, which are characterized by large areas of homogeneous color, which this algorithm captures reasonably well.
 
-\paragraph{Implementation} The algorithm can be implemented to run very efficiently. Using a disjoint set forest data structure for the segmentation allows determining the component of a vertex and merging components to be performed in amortized $O(\alpha(n))$ time where $\alpha$ is the inverse of the Ackermann function. Computing $MInt$ between each iteration can be done in constant $O(1)$ time. With an adjacency list data structure for the graph $G$, it is easy to list all edges in $O(m)$ time. This makes clear that the time behavior of the algorithm is dominated by the initial sorting of edges, which can be computed in $O(m\log(m))$ time using an optimal comparison sort like merge sort.
+\paragraph{Implementation} The algorithm can be implemented to run very efficiently. By using a disjoint set forest data structure for the segmentation, determining the component of a vertex and merging components to be performed in amortized $O(\alpha(n))$ time where $\alpha$ is the inverse of the Ackermann function
+\footnote{
+The Ackermann function is a very fast growing function. Its inverse is therefore extremely slow growing, so it can be considered equivalent to a small constant for all practical purposes. See \url{http://en.wikipedia.org/wiki/Ackermann_function} for an introduction.
+} \cite{tarjan1975efficiency}. Computing $MInt$ between each iteration can be done in constant $O(\alpha(n))$ time - the largest weight of the minimum spanning tree is the one we used for the merge, and one can keep the cardinality of segments in the disjoint set data structure to find it with a single find operation. With an adjacency list data structure for the graph $G$, it is easy to list all edges in $O(m)$ time. This makes clear that the time behavior of the algorithm is dominated by the initial sorting of edges, which can be computed in $O(m\log(m))$ time using an optimal comparison sort like merge sort.
 
 The authors study the case where $G$ is an $8$-connected graph and where it is a $K$-nearest-neighbor graph in $(x, y, r, g, b)$ feature space. Since both classes of graphs are sparse - the number of edges is within a constant factor of the number of vertices - this makes the time complexity of the algorithm $O(n\log(n))$.
 
@@ -95,7 +98,7 @@ Felzenszwalb's method, using a small enough scale parameter, tends to produce ov
 \Function{HueMerging}{$I$, $S = \{S_1, ..., S_q\}$, $k \in \mathbb{N} - \{0\}$}
 \State $E \gets \emptyset$
 \For{each unordered pair $\{S_i, S_j\}$ in $S$}
-\State Let $h_i$ and $h_j$ the average hue of $S_i$ and $S_j$ in $I$ respectively.
+\State Let $h_i$ and $h_j$ be the average hues of $S_i$ and $S_j$ in $I$ respectively.
 \State $E \gets E \cup \{(i, j, |h_i - h_j| )\}$
 \EndFor
 \For{$i \gets 1$ to $\lfloor \frac{q}{k} \rfloor$}
@@ -109,6 +112,6 @@ Felzenszwalb's method, using a small enough scale parameter, tends to produce ov
 
 \paragraph{Theoretical justification} This is mostly a heuristic method which relies on greedy assumptions for efficiency. For instance we assume that the difference in average hue between the merged segment is small enough that the average hue of the new segment does not need recomputing. As we merge them from smallest hue difference to largest, this assumption holds to some extent. Although computing the new hue can be done efficiently by associativity of the barycenter, it would require resorting the data structure for $E$ to account for the changes - which propagate inside the graph in a non-trivial way.
 
-\paragraph{Implementation} Computing the average hue for each segment can be done in $O(n\alpha(n))$ steps using a disjoint set forest data structure for $S$ where $\alpha$ is the inverse of the Ackermann function and $n$ is the number of pixels in the image - assuming the hue of each pixels was precomputed as part of a preprocessing step. Using a binary heap data structure for $E$ makes computing the edges weight run in $O(q^2)$ time, and the second loop then runs in $O(\lfloor \frac{q}{k} \rfloor \log(q))$. As there is, to the author's knowledge, no direct relationship between $q$ and $n$ (besides $q \leq n$) allowing us to decide which of the first $2$ steps dominates the other, we will leave the overall time complexity as $O(n\alpha(n) + q^2)$.
+\paragraph{Implementation} Computing the average hue for each segment can be done in $O(n\alpha(n))$ steps using a disjoint set forest data structure for $S$ where $\alpha$ is the inverse of the Ackermann function and $n$ is the number of pixels in the image - assuming the hue of each pixels was precomputed as part of a preprocessing step. Using a binary heap data structure for $E$ makes computing the edge weights run in $O(q^2)$ time, and the second loop then runs in $O(\lfloor \frac{q}{k} \rfloor \log(q))$. As there is, to the author's knowledge, no direct relationship between $q$ and $n$ (besides $q \leq n$) allowing us to decide which of the first $2$ steps dominates the other, we will leave the overall time complexity as $O(n\alpha(n) + q^2)$.
 
-\paragraph{Results and analysis} As a post-processing step to Felzenszwalb's method, this algorithm solves the issues mentioned earlier - segments of varying size, connecting areas which are spatially disconnected. This yields segmentation which correspond better to human perception, and are overall more consistent across images of the same character, which is essential to classification.
+\paragraph{Results and analysis} As a post-processing step to Felzenszwalb's method, this algorithm solves the issues mentioned earlier - segments of varying size, connecting areas which are spatially disconnected. This yields segmentations which correspond better to human perception, and are overall more consistent across images of the same character, which is essential to classification.

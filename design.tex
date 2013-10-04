@@ -7,11 +7,11 @@
 \caption{Diagram depicting how preprocessing, segmentation and classification interact.}
 \end{figure}
 
-The method takes the shape of computer vision system with separate phases of preprocessing, segmentation and classification.
+The method takes the shape of a computer vision system with separate phases of preprocessing, segmentation and classification.
 
 \begin{itemize}
 \item The preprocessing step should operate transformations on the original image so segmentation can be applied efficiently and accurately. This includes filtering, color space transformations, histogram manipulations and geometric transformations. This results into a new preprocessed image.
-\item The segmentation method aims to automatically isolate parts of the character image as faithfully to human perception as possible. An ideal segmentation would for instance segment separately hair, face, clothes, hands and feet as separate components.
+\item The segmentation method aims to automatically isolate parts of the character image as faithfully to human perception as possible. An ideal segmentation would for instance segment separately hair, face, clothes, hands and feet as distinct components.
 The end result of the segmentation is a partition of the set of pixels in the image.
 \item The goal of classification is to extract features of interest from the segmentation, and use these features to predict the character identity from the training information. The end result is the predicted name of the character.
 \end{itemize}
